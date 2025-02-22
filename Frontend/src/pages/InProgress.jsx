@@ -178,7 +178,9 @@ const InProgress = () => {
                 onDrop={() => handleDrop(id)}
                 layout // Enables smooth transitions when the layout changes
               >
-                <h3 className="text-xl font-semibold">{item.title}</h3>
+                <h3 className="text-xl font-semibold  text-black">
+                  {item.title}
+                </h3>
                 <p className="text-gray-700 mt-1">{item.description}</p>
                 <p className="text-gray-500 text-sm mt-2">
                   Created: {moment(item.createdAt).format("MMMM Do YYYY")}
