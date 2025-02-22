@@ -5,10 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 import moment from "moment";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import { motion } from "framer-motion"; // Import framer-motion
 
 const InProgress = () => {
-  const [isEditing, setIsEditing] = useState(false); // State to track if you're editing a task
-  const [editingTaskId, setEditingTaskId] = useState(null); // Store the ID of the task being edited
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [draggedTaskIndex, setDraggedTaskIndex] = useState(null);
 
   const { user } = useContext(AuthContext);
   const axiosPublic = UseAxios();
@@ -20,12 +23,16 @@ const InProgress = () => {
     },
   });
 
-  let InprogessTasks = [];
+  let toDoTasks = [];
 
   if (data && Array.isArray(data)) {
-    // Filter tasks into separate variables
-    InprogessTasks = data.filter((task) => task.category === "In Progress");
+    toDoTasks = data.filter((task) => task.category === "In Progress");
   }
+
+  React.useEffect(() => {
+    setTasks(toDoTasks);
+  }, [data]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     userId: user?.uid,
@@ -34,14 +41,13 @@ const InProgress = () => {
     email: user?.email,
     category: "To-Do",
     status: "InComplete",
-    dueDate: moment().format("YYYY-MM-DD"), // Default to today's date
+    dueDate: moment().format("YYYY-MM-DD"),
   });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // add task
   const handleSubmit = async () => {
     if (!user?.uid) {
       console.error("User not logged in");
@@ -52,12 +58,10 @@ const InProgress = () => {
       const taskData = { ...formData, userId: user.uid };
 
       if (isEditing) {
-        // Update the task
         const response = await axiosPublic.put(
           `/tasks/${editingTaskId}`,
           taskData
         );
-        console.log("Task updated successfully", response.data);
         Swal.fire({
           title: "Success!",
           text: "Task updated successfully",
@@ -66,7 +70,6 @@ const InProgress = () => {
           showConfirmButton: false,
         });
       } else {
-        // Add a new task
         await axiosPublic.post("/tasks", taskData);
         Swal.fire({
           title: "Success!",
@@ -77,17 +80,15 @@ const InProgress = () => {
         });
       }
 
-      // Refetch the data and close the modal
       refetch();
       setIsOpen(false);
-      setIsEditing(false); // Reset the editing state after submission
-      setEditingTaskId(null); // Reset the task ID
+      setIsEditing(false);
+      setEditingTaskId(null);
     } catch (error) {
       console.error("Error processing task:", error);
     }
   };
 
-  // Handle Edit
   const handleEdit = (taskId) => {
     const taskToEdit = data.find((task) => task._id === taskId);
     setFormData({
@@ -97,12 +98,11 @@ const InProgress = () => {
       category: taskToEdit.category,
       dueDate: taskToEdit.dueDate,
     });
-    setIsEditing(true); // Mark as editing
-    setEditingTaskId(taskId); // Store the task ID being edited
-    setIsOpen(true); // Open the modal
+    setIsEditing(true);
+    setEditingTaskId(taskId);
+    setIsOpen(true);
   };
 
-  // Handle Delete
   const handleDelete = async (taskId) => {
     if (!user?.uid) {
       console.error("User not logged in");
@@ -111,8 +111,7 @@ const InProgress = () => {
 
     try {
       const response = await axiosPublic.delete(`/tasks/${taskId}`);
-      console.log(response.data); // Success message from the server
-      refetch(); // Refresh the task list
+      refetch();
       Swal.fire({
         title: "Success!",
         text: "Task deleted successfully",
@@ -132,20 +131,52 @@ const InProgress = () => {
     }
   };
 
+  const handleDragStart = (index) => {
+    setDraggedTaskIndex(index);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+  };
+
+  const handleDrop = (index) => {
+    if (draggedTaskIndex === null || draggedTaskIndex === index) return;
+
+    // Update local task order
+    const updatedTasks = [...tasks];
+    const draggedTask = updatedTasks.splice(draggedTaskIndex, 1)[0];
+    updatedTasks.splice(index, 0, draggedTask);
+
+    // Update the state with the new order
+    setTasks(updatedTasks);
+
+    // Reset dragged task index
+    setDraggedTaskIndex(null);
+  };
+
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-blue-700 mb-4">To-Do</h2>
+        <h2 className="text-2xl font-semibold text-blue-700 mb-4">
+          In Progress
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {InprogessTasks?.length === 0 ? (
+          {tasks?.length === 0 ? (
             <div className="col-span-full text-center py-8 text-gray-500">
               No tasks added yet.
             </div>
           ) : (
-            InprogessTasks?.map((item, id) => (
-              <div
-                key={id}
+            tasks?.map((item, id) => (
+              <motion.div
+                key={item._id}
                 className="bg-white p-4 rounded-lg shadow-md flex flex-col border hover:bg-gray-100"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 50 }}
+                draggable
+                onDragStart={() => handleDragStart(id)}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(id)}
+                layout // Enables smooth transitions when the layout changes
               >
                 <h3 className="text-xl font-semibold">{item.title}</h3>
                 <p className="text-gray-700 mt-1">{item.description}</p>
@@ -158,9 +189,7 @@ const InProgress = () => {
                 <div className="flex justify-between items-center">
                   <div className="flex space-x-2 mt-4">
                     <button
-                      onClick={() => {
-                        handleEdit(item._id);
-                      }}
+                      onClick={() => handleEdit(item._id)}
                       className="text-blue-500 hover:text-blue-700 cursor-pointer"
                     >
                       <FaEdit className="text-xl" />
@@ -172,18 +201,26 @@ const InProgress = () => {
                       <FaTrash className="text-xl" />
                     </button>
                   </div>
-                  <button className="cursor-pointer">Incomplete</button>
+                  {item.category !== "Done" ? (
+                    <span className="bg-red-400 p-2 rounded cursor-pointer">
+                      InComplete
+                    </span>
+                  ) : (
+                    <span className="bg-green-400 p-2 rounded cursor-pointer">
+                      Completed
+                    </span>
+                  )}
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>
       </div>
+
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
-
             <input
               type="text"
               name="title"
@@ -192,7 +229,6 @@ const InProgress = () => {
               onChange={handleChange}
               className="w-full p-2 mb-2 border rounded"
             />
-
             <textarea
               name="description"
               placeholder="Description"
@@ -200,7 +236,6 @@ const InProgress = () => {
               onChange={handleChange}
               className="w-full p-2 mb-2 border rounded"
             ></textarea>
-
             <select
               name="category"
               value={formData.category}
@@ -211,7 +246,6 @@ const InProgress = () => {
               <option value="In Progress">In Progress</option>
               <option value="Done">Done</option>
             </select>
-
             <input
               type="date"
               name="dueDate"
@@ -219,7 +253,6 @@ const InProgress = () => {
               onChange={handleChange}
               className="w-full p-2 mb-4 border rounded"
             />
-
             <div className="flex justify-end space-x-2">
               <button
                 className="px-4 py-2 bg-gray-500 text-white rounded"
@@ -231,9 +264,9 @@ const InProgress = () => {
                 className="px-4 py-2 bg-gray-500 text-white rounded"
                 onClick={() => {
                   setIsOpen(false);
-                  setIsEditing(false); // Reset editing state
+                  setIsEditing(false);
                   setEditingTaskId(null);
-                  handleSubmit(); // Reset task ID
+                  handleSubmit();
                 }}
               >
                 Submit

@@ -141,15 +141,17 @@ const Alltask = () => {
   return (
     <div>
       {/* Button to open modal */}
-      <div className="w-14 h-14 rounded p-2 bg-gray-400 flex flex-col justify-center items-center mb-8">
-        <button className="cursor-pointer" onClick={() => setIsOpen(true)}>
-          <CiCirclePlus className="text-3xl" />
-        </button>
+      <div className="flex justify-end md:justify-start">
+        <div className="fixed w-14 h-14 rounded p-2 bg-gray-400 flex   justify-center items-center mb-8">
+          <button className="cursor-pointer" onClick={() => setIsOpen(true)}>
+            <CiCirclePlus className="text-3xl" />
+          </button>
+        </div>
       </div>
 
       {/* Category Data: To-Do */}
       {toDoTasks?.length > 0 && (
-        <div className="mb-8">
+        <div className="pt-16 mb-8">
           <h2 className="text-2xl font-semibold text-blue-700 mb-4">To-Do</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {toDoTasks.map((item, id) => (
@@ -180,7 +182,15 @@ const Alltask = () => {
                       <FaTrash className="text-xl" />
                     </button>
                   </div>
-                  <button className="cursor-pointer">Incomplete</button>
+                  {item.category !== "Done" ? (
+                    <span className="bg-red-400 p-2 rounded cursor-pointer">
+                      InComplete
+                    </span>
+                  ) : (
+                    <span className="bg-green-400 p-2 rounded cursor-pointer">
+                      Completed
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -223,7 +233,15 @@ const Alltask = () => {
                       <FaTrash className="text-xl" />
                     </button>
                   </div>
-                  <button className="cursor-pointer">Incomplete</button>
+                  {!item.category !== "Done" ? (
+                    <span className="bg-red-400 p-2 rounded cursor-pointer">
+                      InComplete
+                    </span>
+                  ) : (
+                    <span className="bg-green-400 p-2 rounded cursor-pointer">
+                      Completed
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -232,13 +250,13 @@ const Alltask = () => {
       )}
 
       {/* Category Data: Done */}
-      {inProgressTasks?.length > 0 && (
+      {doneTasks?.length > 0 && (
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-yellow-700 mb-4">
-            In Progress
+            Completed
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {inProgressTasks.map((item, id) => (
+            {doneTasks.map((item, id) => (
               <div
                 key={id}
                 className="bg-white p-4 rounded-lg shadow-md flex flex-col border hover:bg-gray-100"
@@ -266,7 +284,13 @@ const Alltask = () => {
                       <FaTrash className="text-xl" />
                     </button>
                   </div>
-                  <button className="cursor-pointer">Incomplete</button>
+                  {item.category == "Done" ? (
+                    <span className="bg-green-400 p-2 rounded cursor-pointer">
+                      Completed
+                    </span>
+                  ) : (
+                    ""
+                  )}
                 </div>
               </div>
             ))}

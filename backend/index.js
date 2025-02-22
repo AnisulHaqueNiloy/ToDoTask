@@ -32,11 +32,43 @@ async function run() {
     const userCollection = db.db("To-do").collection("users");
 
     // POST route to add a task
+    // app.post("/tasks", async (req, res) => {
+    //   const task = req.body;
+    //   const result = await taskCollection.insertOne(task);
+    //   res.send(result);
+    // });
+
     app.post("/tasks", async (req, res) => {
       const task = req.body;
-      const result = await taskCollection.insertOne(task);
-      res.send(result);
+
+      try {
+        // Find if any task exists for this user and category
+        const existingTask = await taskCollection.findOne({
+          email: task.email,
+          category: task.category,
+        });
+
+        // If no task exists, set order to 0, else find the last order and increment
+        const nextOrder = existingTask
+          ? (
+              await taskCollection.findOne(
+                { email: task.email, category: task.category },
+                { sort: { order: -1 } }
+              )
+            )?.order + 1
+          : 0;
+
+        const taskWithOrder = { ...task, order: nextOrder };
+
+        const result = await taskCollection.insertOne(taskWithOrder);
+        res.send(result);
+      } catch (error) {
+        console.error("Error creating task:", error);
+        res.status(500).send({ error: "Failed to create task" });
+      }
     });
+
+    // Status change
 
     // GET route
     app.get("/tasks", async (req, res) => {
@@ -133,6 +165,8 @@ async function run() {
           .json({ message: "Error deleting task", error: error.message });
       }
     });
+
+    // Reorder tasks
 
     // User save in db route
     app.post("/users", async (req, res) => {
