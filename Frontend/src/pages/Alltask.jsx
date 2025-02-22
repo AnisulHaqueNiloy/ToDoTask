@@ -12,6 +12,7 @@ const Alltask = () => {
   const [editingTaskId, setEditingTaskId] = useState(null); // Store the ID of the task being edited
 
   const { user } = useContext(AuthContext);
+
   const axiosPublic = UseAxios();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["data"],
@@ -159,7 +160,9 @@ const Alltask = () => {
                 key={id}
                 className="bg-white p-4 rounded-lg shadow-md flex flex-col border hover:bg-gray-100"
               >
-                <h3 className="text-xl font-semibold">{item.title}</h3>
+                <h3 className="text-xl font-semibold text-black">
+                  {item.title}
+                </h3>
                 <p className="text-gray-700 mt-1">{item.description}</p>
                 <p className="text-gray-500 text-sm mt-2">
                   Created: {moment(item.createdAt).format("MMMM Do YYYY")}
