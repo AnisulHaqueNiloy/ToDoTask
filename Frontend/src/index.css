@@ -1,2 +1,42 @@
 @import "tailwindcss";
 @plugin "daisyui";
+/* Default light theme colors */
+:root {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f4f4f4;
+  --text-color: #000000;
+  --button-bg: #ff6f61;
+  --button-text: #ffffff;
+  --nav-bg: #ffffff;
+  --nav-text: #000000;
+}
+
+/* Dark theme colors */
+.dark {
+  --primary-bg: #1a202c; /* dark background */
+  --secondary-bg: #2d3748; /* darker background */
+  --text-color: #ffffff; /* light text */
+  --button-bg: #e53e3e; /* dark button */
+  --button-text: #ffffff;
+  --nav-bg: #2d3748; /* dark nav */
+  --nav-text: #ffffff;
+}
+
+/* Apply colors to specific elements */
+body {
+  background-color: var(--primary-bg);
+  color: var(--text-color);
+}
+
+button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+}
+
+nav {
+  background-color: var(--nav-bg);
+}
+
+nav a {
+  color: var(--nav-text);
+}
