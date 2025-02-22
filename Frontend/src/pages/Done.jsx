@@ -1,17 +1,19 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { AuthContext } from "../authprovider/AuthProvider";
 import UseAxios from "../UseAxios";
 import { useQuery } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 import moment from "moment";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { motion } from "framer-motion"; // Import framer-motion
+import { motion } from "framer-motion";
 
 const Done = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [draggedTaskIndex, setDraggedTaskIndex] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null); // For touch events
+  const taskRefs = useRef([]); // Ref to store task elements
 
   const { user } = useContext(AuthContext);
   const axiosPublic = UseAxios();
@@ -131,6 +133,7 @@ const Done = () => {
     }
   };
 
+  // Drag and Drop Handlers
   const handleDragStart = (index) => {
     setDraggedTaskIndex(index);
   };
@@ -142,17 +145,60 @@ const Done = () => {
   const handleDrop = (index) => {
     if (draggedTaskIndex === null || draggedTaskIndex === index) return;
 
-    // Update local task order
     const updatedTasks = [...tasks];
     const draggedTask = updatedTasks.splice(draggedTaskIndex, 1)[0];
     updatedTasks.splice(index, 0, draggedTask);
 
-    // Update the state with the new order
     setTasks(updatedTasks);
-
-    // Reset dragged task index
     setDraggedTaskIndex(null);
   };
+
+  // Touch Handlers
+  const handleTouchStart = (event, index) => {
+    setDraggedTaskIndex(index);
+    setTouchStartY(event.touches[0].clientY);
+  };
+
+  const handleTouchMove = (event) => {
+    event.preventDefault();
+  };
+
+  const handleTouchEnd = (event, index) => {
+    if (draggedTaskIndex === null || draggedTaskIndex === index) return;
+
+    const updatedTasks = [...tasks];
+    const draggedTask = updatedTasks.splice(draggedTaskIndex, 1)[0];
+    updatedTasks.splice(index, 0, draggedTask);
+
+    setTasks(updatedTasks);
+    setDraggedTaskIndex(null);
+  };
+
+  // Attach touch event listeners
+  useEffect(() => {
+    const taskElements = taskRefs.current;
+
+    const handleTouchMove = (event) => {
+      event.preventDefault(); // Now this will work without warnings
+    };
+
+    taskElements.forEach((taskElement) => {
+      if (taskElement) {
+        taskElement.addEventListener("touchmove", handleTouchMove, {
+          passive: false,
+        });
+      }
+    });
+
+    // Cleanup event listeners
+    return () => {
+      taskElements.forEach((taskElement) => {
+        if (taskElement) {
+          taskElement.removeEventListener("touchmove", handleTouchMove);
+        }
+      });
+    };
+  }, [tasks]); // Re-attach listeners when tasks change
 
   return (
     <div>
@@ -167,6 +213,7 @@ const Done = () => {
             tasks?.map((item, id) => (
               <motion.div
                 key={item._id}
+                ref={(el) => (taskRefs.current[id] = el)} // Attach ref to each task
                 className="bg-white p-4 rounded-lg shadow-md flex flex-col border hover:bg-gray-100"
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 50 }}
@@ -174,9 +221,14 @@ const Done = () => {
                 onDragStart={() => handleDragStart(id)}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(id)}
-                layout // Enables smooth transitions when the layout changes
+                onTouchStart={(e) => handleTouchStart(e, id)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={(e) => handleTouchEnd(e, id)}
+                layout
               >
-                <h3 className="text-xl font-semibold">{item.title}</h3>
+                <h3 className="text-xl font-semibold  text-black">
+                  {item.title}
+                </h3>
                 <p className="text-gray-700 mt-1">{item.description}</p>
                 <p className="text-gray-500 text-sm mt-2">
                   Created: {moment(item.createdAt).format("MMMM Do YYYY")}
